@@ -29,7 +29,7 @@ int main() {
             exit(1);
         } else if(n1 == 0) {
             // Processo N1
-            printf("N1 Exibe uma mensagem: ");
+            
             // Exibe uma mensagem
             execl("/bin/echo", "echo", "Atividade de SO", NULL);
             printf("\n");
@@ -48,7 +48,7 @@ int main() {
             exit(1);
         } else if(n2 == 0) {
             // Processo N2
-            printf("N2 Imprime o nome do host da maquina: ");
+            
             // Imprime o nome do host da maquina
             execl("/bin/hostname", "hostname", NULL);
             printf("\n");
@@ -60,7 +60,7 @@ int main() {
         
         // F1 espera N1 e N2 terminarem
         waitpid(n1, NULL, 0);
-        waitpid(n2,NULL, 0);
+        waitpid(n2, NULL, 0);
 
         // Apos os dois terminarem exibe a mensagem
         printf("Processo F1 (PID: %d, PPID: %d) finalizou apos N1 e N2.\n", getpid(), getppid());
@@ -88,7 +88,7 @@ int main() {
             exit(1);
         } else if(n3 == 0) {
             // Processo N3
-            printf("N3 Exibe data e hora atual: ");
+            
             // Exibe data e hora atual
             execl("/bin/date", "date", NULL);
             printf("\n");
@@ -107,7 +107,7 @@ int main() {
             exit(1);
         } else if(n4 == 0) {
             // Processo N4
-            printf("N4 Imprime o nome do usuario atual: " );
+            
             // Imprime o nome do usuario atual
             execl("/usr/bin/whoami", "whoami", NULL);
             printf("\n");
@@ -119,7 +119,7 @@ int main() {
         
         // F1 espera N1 e N2 terminarem
         waitpid(n3, NULL, 0);
-        waitpid(n4,NULL, 0);
+        waitpid(n4, NULL, 0);
 
         // Apos os dois terminarem exibe a mensagem
         printf("Processo F2 (PID: %d, PPID: %d) finalizou apos N1 e N2.\n", getpid(), getppid());
