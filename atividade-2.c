@@ -297,6 +297,7 @@ int main() {
 
     fim = tempo_em_us();
 
+    // Exibe os resultados
     printf("Media: %.2lf\n", media);
     printf("Mediana: %.2lf\n", mediana);
     printf("Desvio Padrao: %.2lf\n", desvio_padrao);
