@@ -1,16 +1,16 @@
-// Inclusao da bibliotecas
+// Inclusão das bibliotecas necessárias
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 
 int main() {
-    // Declaracao dos identificadores dos processos filhos
+    // Declaração dos identificadores dos processos filhos
     pid_t f1,f2,n1,n2,n3,n4;
 
     // Processo pai (P1) inicia
 
-    // Criacao do primeiro filho F1
+    // Criação do primeiro filho F1
     f1 = fork();
 
     // Se falhar exibe a mensagem e encerra o programa
@@ -18,7 +18,7 @@ int main() {
         perror("Erro ao criar processo.");
         exit(1);
     } else if(f1 == 0) { 
-        // Processo F1 em execucao
+        // Processo F1 em execução
 
         // Cria N1 filho de F1
         n1 = fork(); 
@@ -62,14 +62,14 @@ int main() {
         waitpid(n1, NULL, 0);
         waitpid(n2, NULL, 0);
 
-        // Apos os dois terminarem exibe a mensagem
+        // Após os dois terminarem exibe a mensagem
         printf("Processo F1 (PID: %d, PPID: %d) finalizou apos N1 e N2.\n", getpid(), getppid());
         exit(0);
     }
 
     // Processo P1 continua
 
-    // Criacao do segundo filho F2
+    // Criação do segundo filho F2
     f2 = fork();
 
     // Se falhar exibe a mensagem e encerra o programa
@@ -121,7 +121,7 @@ int main() {
         waitpid(n3, NULL, 0);
         waitpid(n4, NULL, 0);
 
-        // Apos os dois terminarem exibe a mensagem
+        // Após os dois terminarem exibe a mensagem
         printf("Processo F2 (PID: %d, PPID: %d) finalizou apos N1 e N2.\n", getpid(), getppid());
         exit(0);
     }
