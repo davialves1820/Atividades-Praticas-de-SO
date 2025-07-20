@@ -209,3 +209,20 @@ int main() {
 
     return 0;
 }
+/*
+Variação nos Tempos de Execução
+
+Durante os testes realizados com os quatro modos de execução (1 thread, 3 threads, 1 processo, 3 processos), foi percebida uma variação significativa nos tempos de execução entre diferentes execuções, mesmo mantendo o tamanho do vetor constante.
+
+Essa variação pode ser atribuída a diversos fatores, como:
+
+    Gerenciamento de recursos pelo sistema operacional, que pode alocar threads ou processos de maneira diferente a cada execução.
+
+    Carga momentânea da CPU, afetando o paralelismo efetivo, principalmente nos modos com 3 threads ou 3 processos.
+
+    Overhead de criação e sincronização de threads e processos, que pode ter impacto imprevisível em execuções rápidas.
+
+    Concorrência com outros processos do sistema, que pode interferir especialmente em ambientes com poucos núcleos ou com multitarefa ativa.
+
+De modo geral, percebeu-se que modos sequenciais tendem a apresentar resultados mais consistentes, enquanto os modos paralelos mostraram maior oscilação nos tempos, principalmente quando o ganho de paralelismo não compensava o custo de gerenciamento.
+*/
