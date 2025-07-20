@@ -134,3 +134,29 @@ int main() {
 
     return 0;
 }
+----- Modo com 3 Threads -----
+Media: 49.84
+Mediana: 50.00
+Desvio Padrao: 29.24
+Tempo com 3 threads: 2095 microssegundos
+
+----- Modo com 1 Thread (Sequencial) -----
+Media: 49.84
+Mediana: 50.00
+Desvio Padrao: 29.24
+Tempo com 1 thread: 2637 microssegundos
+
+----- Modo com 3 Processos -----
+Media: 49.84
+Mediana: 50.00
+Desvio Padrao: 29.24
+Tempo com 3 processos: 4506 microssegundos
+
+----- Modo com 1 Processo (Sequencial) -----
+Media: 49.84
+Mediana: 50.00
+Desvio Padrao: 29.24
+Tempo com 1 processo: 4245 microssegundos
+
+gcc -o estatisticas estatisticas.c -pthread -lm
+gcc -o processos processos.c
