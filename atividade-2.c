@@ -229,5 +229,79 @@ int main() {
     printf("Desvio Padrao: %.2lf\n", desvio_padrao);
     printf("Tempo com 3 processos: %lld microssegundos\n\n", fim - inicio);
 
+    // -----------------------------
+    printf("----- Modo com 1 Processo (Sequencial) -----\n");
+
+    int pipe_1proc[3][2]; // pipes para media, mediana e desvio padrão
+    pipe(pipe_1proc[0]);
+    pipe(pipe_1proc[1]);
+    pipe(pipe_1proc[2]);
+
+    inicio = tempo_em_us();
+
+    // Processo filho único
+    if (fork() == 0) { 
+        // Calcular média
+        long soma = 0;
+        for (int i = 0; i < N; i++) {
+            soma += dados[i];
+        }
+        double m = (double)soma / N;
+        write(pipe_1proc[0][1], &m, sizeof(double)); // Envia pelo pipe
+        close(pipe_1proc[0][1]);
+
+        // Calcular mediana
+        int* copia = malloc(N * sizeof(int));
+        if (!copia) exit(1);
+
+        for (int i = 0; i < N; i++) {
+            copia[i] = dados[i];
+        }
+        qsort(copia, N, sizeof(int), cmpfunc);
+
+        double med;
+        if (N % 2 == 0) {
+            med = (copia[N / 2 - 1] + copia[N / 2]) / 2.0;
+        } else {
+            med = copia[N / 2];
+        }
+        free(copia);
+        write(pipe_1proc[1][1], &med, sizeof(double)); // Envia pelo pipe
+        close(pipe_1proc[1][1]);
+
+        // Calcular desvio padrão
+        soma = 0;
+        for (int i = 0; i < N; i++) {
+            soma += dados[i];
+        }
+        double media_local = (double)soma / N;
+
+        double somatorio = 0.0;
+        for (int i = 0; i < N; i++) {
+            somatorio += pow(dados[i] - media_local, 2);
+        }
+
+        double dp = sqrt(somatorio / N);
+        write(pipe_1proc[2][1], &dp, sizeof(double)); // Envia pelo pipe
+        close(pipe_1proc[2][1]);
+
+        exit(0);
+    }
+
+    wait(NULL); // espera o processo filho único
+
+    // Lê os resultados dos pipes
+    read(pipe_1proc[0][0], &media, sizeof(double));
+    read(pipe_1proc[1][0], &mediana, sizeof(double));
+    read(pipe_1proc[2][0], &desvio_padrao, sizeof(double));
+
+    fim = tempo_em_us();
+
+    printf("Media: %.2lf\n", media);
+    printf("Mediana: %.2lf\n", mediana);
+    printf("Desvio Padrao: %.2lf\n", desvio_padrao);
+    printf("Tempo com 1 processo: %lld microssegundos\n\n", fim - inicio);
+
+    
     return 0;
 }
