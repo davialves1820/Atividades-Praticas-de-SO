@@ -1,162 +1,156 @@
-// threads_3.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include <time.h>
 #include <math.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/time.h>
 
 #define N 10000
 
-int numeros[N];
+int dados[N];
 double media = 0.0, mediana = 0.0, desvio_padrao = 0.0;
 
-// Função para gerar os 10.000 números aleatórios
-void gerar_numeros() {
-    srand(time(NULL));
-    for (int i = 0; i < N; i++) {
-        numeros[i] = rand() % 101; // entre 0 e 100
-    }
+// Função de comparação para qsort
+int cmpfunc(const void* a, const void* b) {
+    return (*(int*)a - *(int*)b);
 }
 
-// Função para comparar inteiros (usada em qsort)
-int comparar(const void *a, const void *b) {
-    return (*(int *)a - *(int *)b);
-}
-
-// Função da thread que calcula a média
-void* calcular_media(void *arg) {
-    double soma = 0.0;
-    for (int i = 0; i < N; i++) {
-        soma += numeros[i];
-    }
-    media = soma / N;
+// Funções para as threads
+void* calcular_media(void* arg) {
+    long soma = 0;
+    for (int i = 0; i < N; i++)
+        soma += dados[i];
+    media = (double)soma / N;
     pthread_exit(NULL);
 }
 
-// Função da thread que calcula a mediana
-void* calcular_mediana(void *arg) {
-    int *copia = malloc(N * sizeof(int));
-    for (int i = 0; i < N; i++) copia[i] = numeros[i];
-    qsort(copia, N, sizeof(int), comparar);
+void* calcular_mediana(void* arg) {
+    qsort(dados, N, sizeof(int), cmpfunc);
     if (N % 2 == 0)
-        mediana = (copia[N/2 - 1] + copia[N/2]) / 2.0;
+        mediana = (dados[N / 2 - 1] + dados[N / 2]) / 2.0;
     else
-        mediana = copia[N/2];
-    free(copia);
+        mediana = dados[N / 2];
     pthread_exit(NULL);
 }
 
-// Função da thread que calcula o desvio padrão
-void* calcular_desvio(void *arg) {
+void* calcular_desvio_padrao(void* arg) {
     double soma = 0.0;
-    for (int i = 0; i < N; i++) {
-        soma += numeros[i];
-    }
+    for (int i = 0; i < N; i++)
+        soma += dados[i];
     double media_local = soma / N;
-    double soma_quadrados = 0.0;
-    for (int i = 0; i < N; i++) {
-        soma_quadrados += pow(numeros[i] - media_local, 2);
-    }
-    desvio_padrao = sqrt(soma_quadrados / N);
+
+    soma = 0.0;
+    for (int i = 0; i < N; i++)
+        soma += pow(dados[i] - media_local, 2);
+
+    desvio_padrao = sqrt(soma / N);
     pthread_exit(NULL);
 }
 
+// Tempo em microssegundos
+long long tempo_em_us() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000000LL + tv.tv_usec;
+}
+
+// Função principal
 int main() {
-    gerar_numeros();
+    srand(time(NULL));
+    for (int i = 0; i < N; i++)
+        dados[i] = rand() % 101;
+
+    printf("----- Modo com 3 Threads -----\n");
+    long long inicio = tempo_em_us();
 
     pthread_t t1, t2, t3;
-
-    clock_t inicio = clock();
-
-    // Criação das threads
     pthread_create(&t1, NULL, calcular_media, NULL);
     pthread_create(&t2, NULL, calcular_mediana, NULL);
-    pthread_create(&t3, NULL, calcular_desvio, NULL);
+    pthread_create(&t3, NULL, calcular_desvio_padrao, NULL);
 
-    // Espera as threads terminarem
     pthread_join(t1, NULL);
     pthread_join(t2, NULL);
     pthread_join(t3, NULL);
 
-    clock_t fim = clock();
+    long long fim = tempo_em_us();
+    printf("Média: %.2lf\n", media);
+    printf("Mediana: %.2lf\n", mediana);
+    printf("Desvio Padrão: %.2lf\n", desvio_padrao);
+    printf("Tempo com 3 threads: %lld microssegundos\n\n", fim - inicio);
 
-    double tempo_total = (double)(fim - inicio) * 1000.0 / CLOCKS_PER_SEC;
+    // -----------------------------
+    printf("----- Modo com 1 Thread (Sequencial) -----\n");
+    inicio = tempo_em_us();
 
-    printf("Resultados com 3 threads:\n");
-    printf("Média: %.2f\n", media);
-    printf("Mediana: %.2f\n", mediana);
-    printf("Desvio padrão: %.2f\n", desvio_padrao);
-    printf("Tempo total (ms): %.2f\n", tempo_total);
+    calcular_media(NULL);
+    calcular_mediana(NULL);
+    calcular_desvio_padrao(NULL);
 
-    int pipe_media[2], pipe_mediana[2], pipe_desvio[2];
-    pipe(pipe_media);
-    pipe(pipe_mediana);
-    pipe(pipe_desvio);
+    fim = tempo_em_us();
+    printf("Média: %.2lf\n", media);
+    printf("Mediana: %.2lf\n", mediana);
+    printf("Desvio Padrão: %.2lf\n", desvio_padrao);
+    printf("Tempo com 1 thread: %lld microssegundos\n\n", fim - inicio);
 
-    clock_t inicio = clock();
+    // -----------------------------
+    printf("----- Modo com 3 Processos -----\n");
 
-    pid_t p1 = fork();
-    if (p1 == 0) {
-        // Processo filho 1 - calcula a média
-        close(pipe_media[0]);
-        double soma = 0.0;
-        for (int i = 0; i < N; i++) soma += numeros[i];
-        double media = soma / N;
-        write(pipe_media[1], &media, sizeof(double));
-        close(pipe_media[1]);
+    int p1[2], p2[2], p3[2];
+    pipe(p1); pipe(p2); pipe(p3);
+    inicio = tempo_em_us();
+
+    if (fork() == 0) { // Processo filho 1
+        double m = 0;
+        long soma = 0;
+        for (int i = 0; i < N; i++)
+            soma += dados[i];
+        m = (double)soma / N;
+        write(p1[1], &m, sizeof(double));
+        close(p1[1]);
         exit(0);
     }
 
-    pid_t p2 = fork();
-    if (p2 == 0) {
-        // Processo filho 2 - calcula a mediana
-        close(pipe_mediana[0]);
-        int *copia = malloc(N * sizeof(int));
-        for (int i = 0; i < N; i++) copia[i] = numeros[i];
-        qsort(copia, N, sizeof(int), comparar);
-        double mediana;
+    if (fork() == 0) { // Processo filho 2
+        double med = 0;
+        qsort(dados, N, sizeof(int), cmpfunc);
         if (N % 2 == 0)
-            mediana = (copia[N/2 - 1] + copia[N/2]) / 2.0;
+            med = (dados[N / 2 - 1] + dados[N / 2]) / 2.0;
         else
-            mediana = copia[N/2];
-        free(copia);
-        write(pipe_mediana[1], &mediana, sizeof(double));
-        close(pipe_mediana[1]);
+            med = dados[N / 2];
+        write(p2[1], &med, sizeof(double));
+        close(p2[1]);
         exit(0);
     }
 
-    pid_t p3 = fork();
-    if (p3 == 0) {
-        // Processo filho 3 - calcula o desvio padrão
-        close(pipe_desvio[0]);
-        double soma = 0.0;
-        for (int i = 0; i < N; i++) soma += numeros[i];
-        double media_local = soma / N;
-        double soma_quadrados = 0.0;
-        for (int i = 0; i < N; i++) {
-            soma_quadrados += pow(numeros[i] - media_local, 2);
-        }
-        double desvio = sqrt(soma_quadrados / N);
-        write(pipe_desvio[1], &desvio, sizeof(double));
-        close(pipe_desvio[1]);
+    if (fork() == 0) { // Processo filho 3
+        double m = 0, dp = 0;
+        long soma = 0;
+        for (int i = 0; i < N; i++)
+            soma += dados[i];
+        m = (double)soma / N;
+
+        double somatorio = 0;
+        for (int i = 0; i < N; i++)
+            somatorio += pow(dados[i] - m, 2);
+        dp = sqrt(somatorio / N);
+
+        write(p3[1], &dp, sizeof(double));
+        close(p3[1]);
         exit(0);
     }
 
-    // Processo pai
-    close(pipe_media[1]);
-    close(pipe_mediana[1]);
-    close(pipe_desvio[1]);
+    wait(NULL); wait(NULL); wait(NULL);
 
-    wait(NULL); wait(NULL); wait(NULL); // Espera os 3 filhos
+    read(p1[0], &media, sizeof(double));
+    read(p2[0], &mediana, sizeof(double));
+    read(p3[0], &desvio_padrao, sizeof(double));
+    fim = tempo_em_us();
 
-    double media, mediana, desvio;
-    read(pipe_media[0], &media, sizeof(double));
-    read(pipe_mediana[0], &mediana, sizeof(double));
-    read(pipe_desvio[0], &desvio, sizeof(double));
-
-    clock_t fim = clock();
-    double tempo_total = (double)(fim - inicio) * 1000.0 / CLOCKS_PER_SEC;
-
+    printf("Média: %.2lf\n", media);
+    printf("Mediana: %.2lf\n", mediana);
+    printf("Desvio Padrão: %.2lf\n", desvio_padrao);
+    printf("Tempo com 3 processos: %lld microssegundos\n\n", fim - inicio);
 
     return 0;
 }
